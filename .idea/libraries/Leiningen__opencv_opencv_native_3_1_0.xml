@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: opencv/opencv-native:3.1.0">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/opencv/opencv-native/3.1.0/opencv-native-3.1.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
