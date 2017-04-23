@@ -152,6 +152,11 @@
         _ (Core/bitwise_or mat1 mat2 new-mat)]
     (if-not (empty? mat-list) (apply bitwise-or new-mat (first mat-list) (rest mat-list)) new-mat)))
 
+(defn bitwise-not
+  [mat]
+    (let [new-mat (Mat.)
+    _ (Core/bitwise_not mat new-mat)]
+      new-mat))
 
 (defn remove-background
   [mat]
@@ -161,7 +166,24 @@
         mask-img (bitwise-or threeshold-bLab-channel threeshold-sHSV-channel)
         _ (.copyTo mat new-mat mask-img)]
         new-mat))
-
+;
+(defn further-filtering
+  [mat]
+  (let [
+         new-mat (Mat.)
+         green-magenta-channel (second (split-mat (toLab mat)))
+         dark-gmc-threeshold   (in-range green-magenta-channel 125 255)
+         light-gmc-threeshold  (in-range green-magenta-channel 135 255)
+         blue-yellow-channel   (second (rest (split-mat (toLab mat))))
+         byc-threeshold        (in-range blue-yellow-channel 200 255 )
+         new-mat (bitwise-or
+                       dark-gmc-threeshold
+                       light-gmc-threeshold
+                       byc-threeshold
+                       )
+         ]
+    new-mat
+    ))
 
 ;WRITE A MACRO a new def-withNewMat that set the function directly with the new variable new-mat,
 ;necessary to preserve immutability
