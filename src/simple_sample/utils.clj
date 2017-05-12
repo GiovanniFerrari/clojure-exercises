@@ -1,9 +1,13 @@
 (ns simple-sample.utils (:import [org.opencv.core
-                                  Mat Core Point Size MatOfDouble MatOfInt MatOfByte MatOfRect Scalar]
-                                 [org.opencv.imgcodecs Imgcodecs]
-                                 [org.opencv.imgproc Imgproc]
-                                 [java.awt.image BufferedImage]
-                                 [javax.swing ImageIcon]))
+                    Mat Core Point Size MatOfDouble MatOfInt MatOfByte MatOfRect Scalar]
+                   [org.opencv.imgcodecs Imgcodecs]
+                   [org.opencv.imgproc Imgproc]
+                   [java.awt.image BufferedImage]
+		               [javax.swing ImageIcon]
+                   )
+          (:require [simple-sample.utils :as ssu]
+                    [simple-sample.Imgproc :as ssI]
+                    [simple-sample.Core :as ssC]))
 
 ;
 (use 'seesaw.core)
@@ -31,21 +35,7 @@
           (.setDataElements raster 0 0 width height bytes)
           image)))))
 
-(defn apply-upper-threshold
-  "A function that takes as argumenst a matrix object and an integer n.
-  It returns a different matrix object with apply a threshold from n to 255 "
-  [mat n]
-  (let [new_mat (Mat.)
-        _ (Imgproc/threshold  mat new_mat n 255 Imgproc/THRESH_BINARY)]
-    new_mat))
-
 ;
-(defn apply-upper-threshold!
-  "A function that takes as argumenst a matrix object and an integer n.
-  It returns the same matrix object with apply a threshold from n to 255 "
-  [mat n]
-  (let [_ (Imgproc/threshold  mat mat n 255 Imgproc/THRESH_BINARY)]
-    mat))
 
 (defn show-mat
   "pass a mat as argument and show it in a windows"
@@ -70,27 +60,13 @@
      new_mat)))
 
 ;
-(defn toHSV
-  "take a matrix object and return a new one in Hue Saturation Value color model."
-  [mat]
-  (let [new-mat (Mat.)
-        _ (Imgproc/cvtColor mat new-mat Imgproc/COLOR_BGR2HSV)]
-    new-mat))
-;
-
-(defn toLab
-  "take a matrix object and return a new one in Hue Saturation Value color model."
-  [mat]
-  (let [new-mat (Mat.)
-        _ (Imgproc/cvtColor mat new-mat Imgproc/COLOR_BGR2Lab)]
-    new-mat))
 
 ;(Core/inRange mat (Scalar. 0 255 100) (Scalar. 255 255 255) new-mat)
 (defn test-HSV
   "only a temporary function to make some test about HSV property of an image
   IT HAS A BIG PROBLEM WHEN LOWER LIMIT IS SETTLED TO 0"
   [mat]
-  (let [old-mat (toHSV mat)
+  (let [old-mat (ssI/toHSV mat)
         f (frame :title "mat" :size [100 :by 100])
         sldr-ll (slider :orientation :vertical :max 255 :value 0) ;;slider of lower limit
         sldr-ul (slider :orientation :vertical :max 255 :value 255) ;;slider of upper limit
@@ -119,32 +95,6 @@
         _ (config! f :content (horizontal-panel :items [sldr-ll sldr-ul lbl]))]
     (-> f pack! show!)))
 ;
-(defn split-mat
-  "take a mat with three channel and return a java.util.ArrayList object
-  containing three mat, one for each channel of the original matrix"
-  [mat]
-  (let [mat-array (java.util.ArrayList.)
-        _ (Core/split mat mat-array)]
-    mat-array))
-
-(defn in-range
-  [mat low-limit up-limit]
-  (let [new-mat (Mat.)
-        _ (Core/inRange mat (Scalar. low-limit 0 0) (Scalar. up-limit 0 0) new-mat)]
-    new-mat))
-
-;
-(defn gaussian-blur
-  [mat square-side sigma]
-  (let [new-mat (Mat.)
-        _ (Imgproc/GaussianBlur mat new-mat (Size. square-side square-side) sigma)]
-    new-mat))
-
-(defn median-blur
-  [mat sigma]
-  (let [new-mat (Mat.)
-        _ (Imgproc/medianBlur mat new-mat sigma)]
-    new-mat))
 
 (defn bitwise-or
   [mat1 mat2 & mat-list]
@@ -154,36 +104,32 @@
 
 (defn bitwise-not
   [mat]
-    (let [new-mat (Mat.)
-    _ (Core/bitwise_not mat new-mat)]
-      new-mat))
+  (let [new-mat (Mat.)
+        _ (Core/bitwise_not mat new-mat)]
+    new-mat))
 
 (defn remove-background
   [mat]
   (let [new-mat (Mat.)
-        threeshold-sHSV-channel (in-range (second (split-mat (toHSV mat))) 130 255)
-        threeshold-bLab-channel (in-range (second (rest (split-mat (toLab mat)))) 135 255)
+        threeshold-sHSV-channel (ssC/in-range (second (ssC/split-mat (ssI/toHSV mat))) 130 255)
+        threeshold-bLab-channel (ssC/in-range (second (rest (ssC/split-mat (ssI/toLab mat)))) 135 255)
         mask-img (bitwise-or threeshold-bLab-channel threeshold-sHSV-channel)
         _ (.copyTo mat new-mat mask-img)]
-        new-mat))
+    new-mat))
 ;
 (defn further-filtering
   [mat]
-  (let [
-         new-mat (Mat.)
-         green-magenta-channel (second (split-mat (toLab mat)))
-         dark-gmc-threeshold   (in-range green-magenta-channel 125 255)
-         light-gmc-threeshold  (in-range green-magenta-channel 135 255)
-         blue-yellow-channel   (second (rest (split-mat (toLab mat))))
-         byc-threeshold        (in-range blue-yellow-channel 200 255 )
-         new-mat (bitwise-or
-                       dark-gmc-threeshold
-                       light-gmc-threeshold
-                       byc-threeshold
-                       )
-         ]
-    new-mat
-    ))
+  (let [new-mat (Mat.)
+        green-magenta-channel (second (ssC/split-mat (ssI/toLab mat)))
+        dark-gmc-threeshold   (ssC/in-range green-magenta-channel 125 255)
+        light-gmc-threeshold  (ssC/in-range green-magenta-channel 135 255)
+        blue-yellow-channel   (second (rest (ssC/split-mat (ssI/toLab mat))))
+        byc-threeshold        (ssC/in-range blue-yellow-channel 200 255)
+        new-mat (bitwise-or
+                 dark-gmc-threeshold
+                 light-gmc-threeshold
+                 byc-threeshold)]
+    new-mat))
 
 ;WRITE A MACRO a new def-withNewMat that set the function directly with the new variable new-mat,
 ;necessary to preserve immutability

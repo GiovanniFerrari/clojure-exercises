@@ -5,7 +5,8 @@
                    [java.awt.image BufferedImage]
 		               [javax.swing ImageIcon]
                    )
-          (:require [simple-sample.utils :as ssu]))
+          (:require [simple-sample.utils :as ssu]
+                    [simple-sample.Imgproc :as ssI]))
 
 (use 'clojure.repl)
 (use 'seesaw.core)
