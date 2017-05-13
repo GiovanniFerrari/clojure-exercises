@@ -4,7 +4,7 @@
                                    [org.opencv.imgproc Imgproc]
                                    [java.awt.image BufferedImage]
                                    [javax.swing ImageIcon])
-                          (:require [simple-sample.Core :as ssC]))
+    (:require [simple-sample.Core :as ssC]))
 
 ;
 (use 'seesaw.core)
@@ -124,7 +124,7 @@
   (nth coll 3))
 
 (defn find-3sons
-  [h-mat]
+  [contours h-mat]
   "This function take as input a hierarchical matrix and return a sequence
   with all indexes of the squares with 3 hierarchical levels.
   TO BE IMPROVED: it is not write functionally"
@@ -139,22 +139,45 @@
                             (not= (get-child  n) -1)
                             (not= (get-parent n) -1)))
         candidate (partition 4 (read-string (.dump h-mat)))
+        get-son (fn [])
         small-squares-index  (keep-indexed #(if (only-son %2) %1) candidate)
-        small-squares        (map          #(nth candidate %) small-squares-index)
-        candidate-medium-square-index (map #(get-parent %) small-squares)
+        small-squares        (mapv          #(nth candidate %) small-squares-index)
+        candidate-medium-square-index (mapv #(get-parent %) small-squares)
         medium-squares-index  (filter #(father-son (nth candidate %)) candidate-medium-square-index)
-        medium-squares       (map #(nth candidate %) medium-squares-index)
-        big-squares-index    (map #(get-parent %) medium-squares)]
-    (concat small-squares-index medium-squares-index big-squares-index)))
-
+        medium-squares       (mapv #(nth candidate %) medium-squares-index)
+        big-squares-index    (mapv #(get-parent %) medium-squares)
+        big-square           (mapv #(nth candidate %) big-squares-index)
+        small-squares-index (mapv #(get-child %) medium-squares)
+        terne-vector (mapv
+                      (fn [b m s] [[(.rows (nth contours b)) b]
+                                   [(.rows (nth contours m)) m]
+                                   [(.rows (nth contours s)) s]])
+                      big-squares-index medium-squares-index small-squares-index)
+        ;terne-vector (filter (fn [[[b b-idx] [m m-idx] [s s-idx]]]
+        ;                       (and (<= 1.26 (/ b m) 1.54)
+        ;                            (<= 1.50 (/ m s) 1.83))) terne-vector)
+        ;terne-vector (mapv (fn [[[b b-idx] [m m-idx] [s s-idx]]] [b-idx m-idx s-idx]) terne-vector)
+        ]
+    (concat big-squares-index medium-squares-index small-squares-index)))
+;
+(defn adaptive-threshold
+  [mat]
+  (let [new-mat (Mat.)
+        _ (Imgproc/adaptiveThreshold
+           (toGray mat)
+           new-mat
+           255
+           Imgproc/ADAPTIVE_THRESH_MEAN_C
+           Imgproc/THRESH_BINARY
+           11
+           2)]
+    new-mat))
+;
 (defn find-3squares
   [mat]
-  (let [[new-mat contours h-mat] (find-contours
-                                  (apply-upper-threshold
-                                   (nth
-                                    (ssC/split-mat
-                                     (toHSV mat))
-                                    2)
-                                   120))
-        squares-list (find-3sons h-mat)]
-    (draw-contours mat contours squares-list)))
+  (let [[new-mat contours h-mat] (find-contours (adaptive-threshold mat))
+        squares-list (find-3sons contours h-mat)]
+    (if (nil? squares-list)
+      (draw-contours mat contours 0)
+      (draw-contours mat contours squares-list))
+    ))
