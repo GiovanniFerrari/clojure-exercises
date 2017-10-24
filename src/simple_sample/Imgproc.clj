@@ -139,14 +139,12 @@
                             (not= (get-child  n) -1)
                             (not= (get-parent n) -1)))
         candidate (partition 4 (read-string (.dump h-mat)))
-        get-son (fn [])
         small-squares-index  (keep-indexed #(if (only-son %2) %1) candidate)
         small-squares        (mapv          #(nth candidate %) small-squares-index)
         candidate-medium-square-index (mapv #(get-parent %) small-squares)
         medium-squares-index  (filter #(father-son (nth candidate %)) candidate-medium-square-index)
         medium-squares       (mapv #(nth candidate %) medium-squares-index)
         big-squares-index    (mapv #(get-parent %) medium-squares)
-        big-square           (mapv #(nth candidate %) big-squares-index)
         small-squares-index (mapv #(get-child %) medium-squares)
         terne-vector (mapv
                       (fn [b m s] [[(.rows (nth contours b)) b]
